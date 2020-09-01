@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"   
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wanghuadi.mapper.ActivityMapper">
+
+	
+	<!-- 列表展示 -->
+	<select id="queryAll" parameterType="map" resultType="com.wanghuadi.beans.Activity">
+		select 
+			a.id,a.activity_code,a.activity_name,a.start_time,a.end_time,GROUP_CONCAT(s.name) as sname ,a.create_time ,tp.activity_name as tname
+		from 
+			t_activity a , t_activity _server  t  , t_server s ,t_type tp
+		where a.id = t.activity_id and t.server_id = s.id  and a.activity_type = tp.id
+		
+		<if test="tid != null">
+			and tp.id=#{tid}
+		</if>
+		<if test="aname != null and aname != ''">
+			and a.activity_name like '%${aname}%'
+		</if>
+		<if test="startTime != null and startTime !=''">
+			and a.create_time >=#{startTime}
+		</if>
+		<if test="endTime != null and endTime !=''">
+			and a.create_time &lt;=#{endTime}
+		</if>
+		
+		GROUP BY a.id order  by a.activity_code asc
+	</select>
+
+	<select id="queryTypeAll" resultType="com.wanghuadi.beans.Type">
+		select * from t_type
+	</select>
+	
+	<select id="queryServerAll" resultType="com.wanghuadi.beans.Server">
+		select * from t_server
+	</select>
+	
+	<!-- 添加活动 -->
+	<insert id="addActivity" parameterType="com.wanghuadi.beans.Activity" useGeneratedKeys="true" keyProperty="id">
+		insert into t_activity
+		(activity_code,activity_name,activity_type,start_time,end_time,create_time)
+		values
+		(#{activity_code},#{activity_name},#{activity_type},#{start_time},#{end_time},now())
+	</insert>
+	
+	<!-- 添加 活动   服务中间表 -->
+	<insert id="addAS" parameterType="map">
+		insert into t_activity _server
+		(activity_id,server_id)
+		values
+		(#{aid},#{sid})
+	</insert>
+
+	<select id="queryById" parameterType="int" resultType="com.wanghuadi.beans.Activity">
+		select * from t_activity where id=#{id}
+	</select>
+	
+	<!-- 根据活动id  查询该活动的服务有哪些 -->
+	<select id="queryServerByAid" parameterType="int" resultType="com.wanghuadi.beans.Server">
+		select * from t_server  where id in 
+		(select t.server_id from t_activity a,t_activity _server t where 
+		 a.id = t.activity_id and a.id=#{id})
+	</select>
+	
+	
+	<!-- 修改活动 -->
+	<update id="updateActivity" parameterType="com.wanghuadi.beans.Activity">
+		update t_activity set
+		activity_code=#{activity_code},activity_name=#{activity_name},
+		activity_type=#{activity_type},start_time=#{start_time},
+		end_time=#{end_time}
+		where id=#{id}
+	</update>	
+	
+	<!-- 删除中间表信息  根据活动id -->
+	<delete id="delAS" parameterType="int">
+		delete from t_activity _server where activity_id=#{id}
+	</delete>
+	
+	<!-- 删除活动 -->
+	<delete id="deleteActivity" parameterType="int">
+		delete from t_activity where id=#{id}
+	</delete>
+
+</mapper>
